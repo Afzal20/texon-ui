@@ -1,0 +1,202 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { AppLayout } from "@/components/layout/AppLayout"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { ShieldCheck, Edit, Plus } from "lucide-react"
+import { toast } from "sonner"
+import { restList } from "@/lib/api/rest"
+
+interface RoleRow {
+  name: string
+  level: string
+  users: string
+}
+
+interface PermissionRow {
+  label: string
+  granted: boolean
+}
+
+export default function Security() {
+  const [roles, setRoles] = useState<RoleRow[]>([])
+  const [modules, setModules] = useState<{ title: string; perms: PermissionRow[] }[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      restList("rbac", "Role"),
+      restList("rbac", "Permission"),
+    ])
+      .then(([rolesRes, permsRes]) => {
+        const roleRows: RoleRow[] = (rolesRes.data ?? []).map((role) => ({
+          name: String(role.name ?? ""),
+          level: role.is_system ? "System Role" : "Custom Role",
+          users: "—",
+        }))
+        setRoles(roleRows)
+        const groups = new Map<string, PermissionRow[]>()
+        for (const perm of permsRes.data ?? []) {
+          const group = String(perm.group ?? "General")
+          if (!groups.has(group)) groups.set(group, [])
+          groups.get(group)!.push({ label: String(perm.label ?? perm.codename ?? ""), granted: true })
+        }
+        setModules(
+          [...groups.entries()].map(([title, perms]) => ({ title, perms })),
+        )
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const matrixRole = roles[0]?.name ?? "System Role"
+
+  return (
+    <AppLayout>
+      <div className="p-6 md:p-8 max-w-[1600px] mx-auto space-y-8">
+
+        {/* Header */}
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Security & Access Control</h2>
+          <p className="text-muted-foreground mt-1 text-sm">Manage system roles, granular permissions, and account security protocols.</p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Left Nav */}
+          <div className="lg:col-span-1">
+            <Card className="bg-white border-border/50 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+              <CardContent>
+                {[
+                  { label: "Personal Profile", active: false },
+                  { label: "Language & Region", active: false },
+                  { label: "Notifications", active: false },
+                  { label: "Security & Role", active: true },
+                  { label: "Organization", active: false },
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    onClick={() => toast.info(`Switched to ${item.label}`)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-left ${
+                      item.active
+                        ? "bg-accent text-primary border-l-[3px] border-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    <ShieldCheck className={`h-4 w-4 ${item.active ? "text-primary" : "text-muted-foreground"}`} />
+                    {item.label}
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Security & Role Section */}
+            <Card className="bg-white border-border/50 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+              <CardHeader className="border-b border-border">
+                <CardTitle className="text-lg font-bold">Security & Role-Based Access</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">Manage system roles, granular permissions, and account security protocols.</p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Role Management */}
+                <div>
+                  <div className="text-sm font-bold text-foreground mb-3">Role Management</div>
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <div className="grid grid-cols-[1.5fr_1fr_1fr_80px] text-xs font-bold text-muted-foreground uppercase tracking-wide px-4 py-3 bg-muted/20 border-b border-border">
+                      <div>Role Name</div><div>Permission Level</div><div>Active Users</div><div>Action</div>
+                    </div>
+                    {loading && <div className="px-4 py-6 text-xs text-muted-foreground text-center">Loading roles…</div>}
+                    {!loading && roles.length === 0 && <div className="px-4 py-6 text-xs text-muted-foreground text-center">No roles defined yet.</div>}
+                    {roles.map((role, i) => (
+                      <div key={i} className="grid grid-cols-[1.5fr_1fr_1fr_80px] items-center px-4 py-4 border-b border-border last:border-0 hover:bg-muted/10 transition-colors text-sm">
+                        <div className="font-medium text-foreground">{role.name}</div>
+                        <div className="text-muted-foreground">{role.level}</div>
+                        <div className="text-muted-foreground">{role.users}</div>
+                        <button onClick={() => toast.info("Role editor coming soon")} className="text-primary font-semibold text-sm hover:underline flex items-center gap-1">
+                          <Edit className="h-3 w-3" /> Edit
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <Button size="sm" variant="outline" className="mt-3 gap-1.5 text-xs" onClick={() => toast.info("New role form coming soon")}>
+                    <Plus className="h-3.5 w-3.5" /> Add New Role
+                  </Button>
+                </div>
+
+                {/* Permissions Matrix */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-sm font-bold text-foreground">Permissions Matrix: {matrixRole}</div>
+                    <button onClick={() => toast.warning("Permissions reset to defaults")} className="text-xs text-primary font-semibold hover:underline">Reset to Default</button>
+                  </div>
+                  {loading && <div className="py-6 text-xs text-muted-foreground text-center">Loading permissions…</div>}
+                  {!loading && modules.length === 0 && <div className="py-6 text-xs text-muted-foreground text-center">No permissions defined yet.</div>}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {modules.map((mod) => (
+                      <div key={mod.title} className="border border-border rounded-lg p-4">
+                        <div className="text-sm font-bold text-foreground mb-3">{mod.title}</div>
+                        {mod.perms.map((perm) => (
+                          <div key={perm.label} className="flex items-center justify-between py-1.5">
+                            <span className="text-sm text-foreground/80">{perm.label}</span>
+                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                              perm.granted ? "bg-primary border-primary" : "bg-white border-muted-foreground/30"
+                            }`}>
+                              {perm.granted && (
+                                <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                                  <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2FA */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <div className="text-sm font-bold text-foreground mb-3">Two-Factor Authentication</div>
+                    <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                      <div>
+                        <div className="font-semibold text-sm text-foreground">WhatsApp/SMS 2FA</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">Secure login via mobile code</div>
+                      </div>
+                      {/* Toggle */}
+                      <div onClick={() => toast.success("2FA toggled")} className="w-11 h-6 bg-primary rounded-full relative cursor-pointer">
+                        <div className="absolute top-1 right-1 w-4 h-4 bg-white rounded-full shadow-sm" />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-foreground mb-3">Session Management</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm p-3 border border-border rounded-lg">
+                        <span className="text-foreground/80">Current session</span>
+                        <span className="text-xs font-semibold text-primary">Active Now</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground px-1">Device history is not tracked on the backend.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-border pt-4 flex items-center justify-between">
+                  <button onClick={() => toast.info("Audit logs coming soon")} className="text-sm text-primary font-semibold flex items-center gap-1 hover:underline">
+                    ↻ View Audit Logs
+                  </button>
+                  <Button onClick={() => toast.success("Security settings saved")} className="bg-foreground hover:bg-foreground/90 text-background font-semibold">
+                    Save Security Settings
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+      </div>
+    </AppLayout>
+  )
+}

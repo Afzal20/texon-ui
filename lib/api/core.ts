@@ -1,0 +1,16 @@
+import { restList, restGet, restCreate, restUpdate, restDelete } from "./rest"
+
+export const getAlarmNotifications = (params?: Record<string, unknown>) => restList("tna", "AlarmNotification", params)
+export const getAlarmNotification = (id: number) => restGet("tna", "AlarmNotification", id)
+export const getChartOfAccounts = (params?: Record<string, unknown>) => restList("accounts", "ChartOfAccount", params)
+export const getChartOfAccount = (id: number) => restGet("accounts", "ChartOfAccount", id)
+export const createChartOfAccount = (data: Record<string, unknown>) => restCreate("accounts", "ChartOfAccount", data)
+export const updateChartOfAccount = (id: number, data: Record<string, unknown>) => restUpdate("accounts", "ChartOfAccount", id, data)
+export const patchChartOfAccount = (id: number, data: Record<string, unknown>) => restUpdate("accounts", "ChartOfAccount", id, data)
+export const deleteChartOfAccount = (id: number) => restDelete("accounts", "ChartOfAccount", id)
+export const getCostCenters = (params?: Record<string, unknown>) => restList("accounts", "CostCenter", params)
+export const getCostCenter = (id: number) => restGet("accounts", "CostCenter", id)
+export const createCostCenter = (data: Record<string, unknown>) => restCreate("accounts", "CostCenter", data)
+export const updateCostCenter = (id: number, data: Record<string, unknown>) => restUpdate("accounts", "CostCenter", id, data)
+export const patchCostCenter = (id: number, data: Record<string, unknown>) => restUpdate("accounts", "CostCenter", id, data)
+export const deleteCostCenter = (id: number) => restDelete("accounts", "CostCenter", id)
