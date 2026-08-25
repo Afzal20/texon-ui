@@ -1,17 +1,9 @@
 import axios from 'axios'
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import { getStoredAccessToken, getStoredRefreshToken, storeTokens, clearTokens } from '@/lib/django-auth'
+import { isJwtExpired } from '@/lib/jwt'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
-
-function isTokenExpired(token: string): boolean {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    return payload.exp * 1000 < Date.now()
-  } catch {
-    return true
-  }
-}
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -21,7 +13,7 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     let token = getStoredAccessToken()
-    if (token && isTokenExpired(token)) {
+    if (token && isJwtExpired(token)) {
       const refresh = getStoredRefreshToken()
       if (refresh) {
         try {

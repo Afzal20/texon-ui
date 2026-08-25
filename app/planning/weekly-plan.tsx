@@ -26,7 +26,7 @@ function startOfWeek(d: Date): Date {
   return copy
 }
 
-export default function ProductionPlanning() {
+export function WeeklyPlan() {
   const [plans, setPlans] = React.useState<PlanRow[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
 
