@@ -1,4 +1,5 @@
 import { decodeJwtPayload } from "@/lib/jwt"
+import { getSessionTokens } from "@/auth/actions/session-tokens"
 
 export const DJANGO_API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
 export const TOKEN_KEY = "django_access_token"
@@ -76,6 +77,31 @@ export function clearTokens() {
 
 export function isAuthenticated(): boolean {
   return !!getStoredAccessToken()
+}
+
+let hydrationAttempted = false
+
+/**
+ * Rehydrates the token pair from the signed httpOnly session cookie when
+ * localStorage has lost them (cleared manually, storage pressure, or Safari's
+ * 7-day ITP eviction). Attempted at most once per page load; returns true when
+ * a usable refresh token is available afterwards.
+ */
+export async function ensureTokensAvailable(): Promise<boolean> {
+  if (getStoredAccessToken() && getStoredRefreshToken()) return true
+  if (hydrationAttempted) return false
+  hydrationAttempted = true
+
+  try {
+    const tokens = await getSessionTokens()
+    if (tokens.accessToken && tokens.refreshToken) {
+      storeTokens(tokens.accessToken, tokens.refreshToken)
+      return true
+    }
+  } catch {
+    // session invalid or network issue — fall through
+  }
+  return false
 }
 
 export async function loginWithDjango(
@@ -173,7 +199,11 @@ export async function refreshDjangoToken(): Promise<string | null> {
 }
 
 export async function getValidAccessToken(): Promise<string | null> {
-  const access = getStoredAccessToken()
+  let access = getStoredAccessToken()
+  if (!access) {
+    await ensureTokensAvailable()
+    access = getStoredAccessToken()
+  }
   if (!access) return null
 
   const payload = decodeJwtPayload(access)
