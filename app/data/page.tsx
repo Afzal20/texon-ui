@@ -1,17 +1,10 @@
-import { Suspense } from "react"
+"use client"
+
+import { useEffect, useState } from "react"
 import { fetchAllFromRest } from "./actions"
+import type { AllData } from "@/lib/api/rest"
 import DataExplorer from "./_components/data-explorer"
 import { Skeleton } from "@/components/ui/skeleton"
-
-async function DataLoader() {
-  let data
-  try {
-    data = await fetchAllFromRest()
-  } catch {
-    data = {}
-  }
-  return <DataExplorer data={data} />
-}
 
 function Loading() {
   return (
@@ -28,9 +21,16 @@ function Loading() {
 }
 
 export default function DataPage() {
-  return (
-    <Suspense fallback={<Loading />}>
-      <DataLoader />
-    </Suspense>
-  )
+  const [data, setData] = useState<AllData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchAllFromRest()
+      .then(setData)
+      .catch(() => setData({} as AllData))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <Loading />
+  return <DataExplorer data={data ?? ({} as AllData)} />
 }

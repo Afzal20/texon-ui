@@ -1,20 +1,9 @@
-import { Suspense } from "react"
+"use client"
+
+import { useEffect, useState } from "react"
 import { BuyersPageClient } from "./_components/buyers-page-client"
 import { getBuyers } from "./actions"
 import { Skeleton } from "@/components/ui/skeleton"
-
-async function BuyersData() {
-  let buyers: Awaited<ReturnType<typeof getBuyers>>["results"] = []
-
-  try {
-    const response = await getBuyers()
-    buyers = response.results
-  } catch {
-    buyers = []
-  }
-
-  return <BuyersPageClient initialBuyers={buyers} />
-}
 
 function BuyersLoading() {
   return (
@@ -42,9 +31,18 @@ function BuyersLoading() {
 }
 
 export default function BuyersPage() {
-  return (
-    <Suspense fallback={<BuyersLoading />}>
-      <BuyersData />
-    </Suspense>
-  )
+  const [buyers, setBuyers] = useState<
+    Awaited<ReturnType<typeof getBuyers>>["results"]
+  >([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getBuyers()
+      .then((res) => setBuyers(res.results))
+      .catch(() => setBuyers([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return <BuyersLoading />
+  return <BuyersPageClient initialBuyers={buyers} />
 }

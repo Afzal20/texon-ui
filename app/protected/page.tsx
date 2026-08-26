@@ -1,20 +1,45 @@
-import { getSession } from "@/auth/lib/session"
-import { redirect } from "next/navigation"
-import { Suspense } from "react"
+"use client"
+
+import { Suspense, useEffect, useState } from "react"
 import { InfoIcon } from "lucide-react"
 
-async function UserDetails() {
-  const session = await getSession()
-  if (!session) redirect("/auth/login")
-
-  return (
-    <pre className="text-xs font-mono p-3 rounded border max-h-32 overflow-auto">
-      {JSON.stringify({ userId: session.userId, email: session.email, roles: session.roles }, null, 2)}
-    </pre>
-  )
+interface SessionData {
+  userId: number
+  email: string
+  roles: string[]
 }
 
 export default function ProtectedPage() {
+  const [session, setSession] = useState<SessionData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const token = localStorage.getItem("django_access_token")
+    if (!token) {
+      window.location.href = "/auth/login"
+      return
+    }
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/auth/user/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Not authenticated")
+        return res.json()
+      })
+      .then((me) => {
+        setSession({
+          userId: me.pk ?? me.id ?? 0,
+          email: me.email ?? "",
+          roles: me.roles ?? [],
+        })
+      })
+      .catch(() => {
+        window.location.href = "/auth/login"
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
   return (
     <div className="flex-1 w-full flex flex-col gap-12">
       <div className="w-full">
@@ -26,9 +51,13 @@ export default function ProtectedPage() {
       </div>
       <div className="flex flex-col gap-2 items-start">
         <h2 className="font-bold text-2xl mb-4">Your user details</h2>
-        <Suspense fallback={<pre className="text-xs font-mono p-3 rounded border max-h-32 overflow-auto">Loading...</pre>}>
-          <UserDetails />
-        </Suspense>
+        {loading ? (
+          <pre className="text-xs font-mono p-3 rounded border max-h-32 overflow-auto">Loading...</pre>
+        ) : session ? (
+          <pre className="text-xs font-mono p-3 rounded border max-h-32 overflow-auto">
+            {JSON.stringify(session, null, 2)}
+          </pre>
+        ) : null}
       </div>
       <div>
         <h2 className="font-bold text-2xl mb-4">You are authenticated</h2>
