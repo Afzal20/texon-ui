@@ -23,9 +23,6 @@ export function SignUpForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -41,13 +38,7 @@ export function SignUpForm({
       return;
     }
 
-    const result = await registerAction({
-      email,
-      password,
-      first_name: firstName,
-      last_name: lastName,
-      phone,
-    });
+    const result = await registerAction({ email, password });
 
     if (result.success) {
       if (result.accessToken) localStorage.setItem("django_access_token", result.accessToken);
@@ -78,36 +69,6 @@ export function SignUpForm({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="first-name">First Name</Label>
-                <Input
-                  id="first-name"
-                  type="text"
-                  placeholder="John"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="last-name">Last Name</Label>
-                <Input
-                  id="last-name"
-                  type="text"
-                  placeholder="Doe"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="01724523349"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
