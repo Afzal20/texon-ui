@@ -164,7 +164,10 @@ export function useAiChat() {
           setError("AI assistant isn't available on the server yet. Please check back soon.")
           return
         }
-        if (!res.ok) throw new Error("Chat request failed")
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null)
+          throw new Error(errData?.detail ?? `Chat request failed (${res.status})`)
+        }
 
         const data = await res.json()
         setError(null)
