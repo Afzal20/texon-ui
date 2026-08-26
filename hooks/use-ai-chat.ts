@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { getValidAccessToken, getStoredAccessToken } from "@/lib/django-auth"
+import { getValidAccessToken } from "@/lib/django-auth"
 
 export interface ChatMessage {
   id: string
@@ -202,7 +202,7 @@ export function useAiChat() {
       }
       setMessages((prev) => [...prev, userMsg])
 
-      const token = getStoredAccessToken()
+      const token = await getValidAccessToken()
       if (token && wsRef.current?.readyState === WebSocket.OPEN) {
         setIsTyping(true)
         wsRef.current.send(JSON.stringify({ type: "chat.send", message: text }))
