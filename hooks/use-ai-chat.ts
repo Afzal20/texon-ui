@@ -11,8 +11,6 @@ export interface ChatMessage {
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
-// Derive ws(s):// from the API origin when no explicit WS URL is configured,
-// so https pages never attempt an insecure ws:// connection (mixed content).
 const WS_BASE = process.env.NEXT_PUBLIC_WS_URL ?? API_BASE.replace(/^http/, "ws")
 
 function getWebSocketUrl(token: string): string {
@@ -26,9 +24,6 @@ export function useAiChat() {
   const [isTyping, setIsTyping] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const wsRef = React.useRef<WebSocket | null>(null)
-  // Single-shot channel: if the socket is unavailable we stop trying for this
-  // session and fall back to plain HTTP. The old infinite 3s reconnect loop
-  // spammed "WebSocket connection error" whenever the backend had no /ws route.
   const statusRef = React.useRef<ChannelStatus>("idle")
   const isMountedRef = React.useRef(true)
 
@@ -52,7 +47,7 @@ export function useAiChat() {
       }
 
       case "chat.start": {
-        setIsTyping(false)
+        setIsTyping(true)
         setMessages((prev) => [
           ...prev,
           {
@@ -81,11 +76,15 @@ export function useAiChat() {
     if (statusRef.current === "open" || statusRef.current === "connecting") return
     statusRef.current = "connecting"
 
-    const token = await getValidAccessToken()
+    let token: string | null = null
+    try {
+      token = await getValidAccessToken()
+    } catch {
+      // token refresh failed — will fall back to HTTP
+    }
     if (!isMountedRef.current) return
     if (!token) {
       statusRef.current = "unavailable"
-      setError("Not authenticated")
       return
     }
 
@@ -116,9 +115,7 @@ export function useAiChat() {
       }
     }
 
-    ws.onerror = () => {
-      // surfaced via onclose — no user-facing error here, we fall back to HTTP
-    }
+    ws.onerror = () => {}
 
     ws.onclose = () => {
       if (wsRef.current === ws) wsRef.current = null
@@ -148,18 +145,33 @@ export function useAiChat() {
   }, [disconnect])
 
   const sendViaHttp = React.useCallback(
-    async (content: string, token: string | null) => {
+    async (content: string) => {
+      let token: string | null = null
+      try {
+        token = await getValidAccessToken()
+      } catch {
+        // fall through
+      }
+      if (!token) {
+        setError("Not authenticated — please log in again.")
+        return
+      }
+
       setIsTyping(true)
       try {
         const res = await fetch(`${API_BASE}/api/v1/ai/chat/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ message: content }),
         })
 
+        if (res.status === 401) {
+          setError("Session expired — please log in again.")
+          return
+        }
         if (res.status === 404) {
           setError("AI assistant isn't available on the server yet. Please check back soon.")
           return
@@ -202,12 +214,11 @@ export function useAiChat() {
       }
       setMessages((prev) => [...prev, userMsg])
 
-      const token = await getValidAccessToken()
-      if (token && wsRef.current?.readyState === WebSocket.OPEN) {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
         setIsTyping(true)
         wsRef.current.send(JSON.stringify({ type: "chat.send", message: text }))
       } else {
-        await sendViaHttp(text, token)
+        await sendViaHttp(text)
       }
     },
     [isTyping, sendViaHttp],

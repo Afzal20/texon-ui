@@ -36,7 +36,6 @@ export function AiCommandCenter() {
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const panelRef = React.useRef<HTMLDivElement>(null)
-  const initializedRef = React.useRef(false)
 
   const { messages, isTyping, error, send, clear, connect, disconnect } = useAiChat()
 
@@ -76,11 +75,9 @@ export function AiCommandCenter() {
   }, [open])
 
   React.useEffect(() => {
-    if (open && !initializedRef.current) {
-      initializedRef.current = true
+    if (open) {
       connect()
-    }
-    if (!open) {
+    } else {
       disconnect()
     }
   }, [open, connect, disconnect])
