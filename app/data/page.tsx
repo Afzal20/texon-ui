@@ -4,7 +4,12 @@ import DataExplorer from "./_components/data-explorer"
 import { Skeleton } from "@/components/ui/skeleton"
 
 async function DataLoader() {
-  const data = await fetchAllFromRest()
+  let data
+  try {
+    data = await fetchAllFromRest()
+  } catch {
+    data = {}
+  }
   return <DataExplorer data={data} />
 }
 

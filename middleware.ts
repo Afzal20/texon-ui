@@ -14,7 +14,7 @@ const publicPaths = [
 // Also allow these API prefixes without session
 const publicPrefixes = ["/_next", "/favicon"]
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Always allow static assets
