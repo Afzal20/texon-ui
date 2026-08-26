@@ -34,16 +34,15 @@ export function useAiChat() {
 
   const handleServerMessage = React.useCallback((data: Record<string, unknown>) => {
     switch (data.type) {
-      case "chunk": {
-        const messageId = data.message_id as string
-        const content = data.content as string
+      case "chat.token": {
+        const token = data.token as string
         setMessages((prev) => {
           const last = prev[prev.length - 1]
-          if (last && last.role === "assistant" && last.id === messageId) {
+          if (last && last.role === "assistant") {
             const updated = [...prev]
             updated[updated.length - 1] = {
               ...last,
-              content: last.content + content,
+              content: last.content + token,
             }
             return updated
           }
@@ -52,25 +51,26 @@ export function useAiChat() {
         break
       }
 
-      case "message_start":
+      case "chat.start": {
         setIsTyping(false)
         setMessages((prev) => [
           ...prev,
           {
             id: String(data.message_id ?? crypto.randomUUID()),
             role: "assistant",
-            content: (data.content as string) ?? "",
-            timestamp: new Date((data.timestamp as string) ?? Date.now()),
+            content: "",
+            timestamp: new Date(),
           },
         ])
         break
+      }
 
-      case "message_complete":
+      case "chat.done":
         setIsTyping(false)
         break
 
-      case "error":
-        setError((data.message as string) ?? "An error occurred")
+      case "chat.error":
+        setError((data.detail as string) ?? "An error occurred")
         setIsTyping(false)
         break
     }
@@ -202,7 +202,7 @@ export function useAiChat() {
       const token = getStoredAccessToken()
       if (token && wsRef.current?.readyState === WebSocket.OPEN) {
         setIsTyping(true)
-        wsRef.current.send(JSON.stringify({ type: "chat_message", content: text }))
+        wsRef.current.send(JSON.stringify({ type: "chat.send", message: text }))
       } else {
         await sendViaHttp(text, token)
       }
