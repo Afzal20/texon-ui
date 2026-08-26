@@ -6,15 +6,16 @@ import { apiFetch, ApiError } from "@/lib/api"
 import type { Buyer, BuyersListResponse } from "./types"
 import type { BuyerFormValues } from "./schema"
 
-async function getAuthToken(): Promise<string> {
-  return getApiToken()
+async function getAuthToken(token?: string): Promise<string> {
+  return getApiToken(token)
 }
 
 export async function getBuyers(
   search?: string,
   page = 1,
+  token?: string,
 ): Promise<BuyersListResponse> {
-  const token = await getAuthToken()
+  const apiToken = await getAuthToken(token)
   const params = new URLSearchParams()
   if (search) params.set("search", search)
   params.set("page", String(page))
@@ -22,19 +23,20 @@ export async function getBuyers(
   return apiFetch<BuyersListResponse>(
     `/api/v1/buyers/?${params.toString()}`,
     {},
-    token,
+    apiToken,
   )
 }
 
-export async function getBuyer(id: number): Promise<Buyer> {
-  const token = await getAuthToken()
-  return apiFetch<Buyer>(`/api/v1/buyers/${id}/`, {}, token)
+export async function getBuyer(id: number, token?: string): Promise<Buyer> {
+  const apiToken = await getAuthToken(token)
+  return apiFetch<Buyer>(`/api/v1/buyers/${id}/`, {}, apiToken)
 }
 
 export async function createBuyer(
   values: BuyerFormValues,
+  token?: string,
 ): Promise<Buyer> {
-  const token = await getAuthToken()
+  const apiToken = await getAuthToken(token)
 
   const buyer = await apiFetch<Buyer>(
     "/api/v1/buyers/",
@@ -42,7 +44,7 @@ export async function createBuyer(
       method: "POST",
       body: JSON.stringify(values),
     },
-    token,
+    apiToken,
   )
 
   revalidatePath("/buyers")
@@ -52,8 +54,9 @@ export async function createBuyer(
 export async function updateBuyer(
   id: number,
   values: BuyerFormValues,
+  token?: string,
 ): Promise<Buyer> {
-  const token = await getAuthToken()
+  const apiToken = await getAuthToken(token)
 
   const buyer = await apiFetch<Buyer>(
     `/api/v1/buyers/${id}/`,
@@ -61,20 +64,20 @@ export async function updateBuyer(
       method: "PATCH",
       body: JSON.stringify(values),
     },
-    token,
+    apiToken,
   )
 
   revalidatePath("/buyers")
   return buyer
 }
 
-export async function deleteBuyer(id: number): Promise<void> {
-  const token = await getAuthToken()
+export async function deleteBuyer(id: number, token?: string): Promise<void> {
+  const apiToken = await getAuthToken(token)
 
   await apiFetch<unknown>(
     `/api/v1/buyers/${id}/`,
     { method: "DELETE" },
-    token,
+    apiToken,
   )
 
   revalidatePath("/buyers")
@@ -83,9 +86,10 @@ export async function deleteBuyer(id: number): Promise<void> {
 export async function submitBuyer(
   id: number | null,
   values: BuyerFormValues,
+  token?: string,
 ): Promise<{ success: boolean; data?: Buyer; error?: string }> {
   try {
-    const data = id ? await updateBuyer(id, values) : await createBuyer(values)
+    const data = id ? await updateBuyer(id, values, token) : await createBuyer(values, token)
     return { success: true, data }
   } catch (error) {
     if (error instanceof ApiError) {

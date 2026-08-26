@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { BuyersPageClient } from "./_components/buyers-page-client"
 import { getBuyers } from "./actions"
 import { Skeleton } from "@/components/ui/skeleton"
+import { getClientToken } from "@/lib/get-client-token"
 
 function BuyersLoading() {
   return (
@@ -35,14 +36,33 @@ export default function BuyersPage() {
     Awaited<ReturnType<typeof getBuyers>>["results"]
   >([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    getBuyers()
+    const token = getClientToken() ?? undefined
+    getBuyers(undefined, undefined, token)
       .then((res) => setBuyers(res.results))
-      .catch(() => setBuyers([]))
+      .catch((err) => {
+        console.error("Failed to fetch buyers:", err)
+        setError(err?.message ?? String(err))
+        setBuyers([])
+      })
       .finally(() => setLoading(false))
   }, [])
 
   if (loading) return <BuyersLoading />
+
+  if (error) {
+    return (
+      <div className="p-6 md:p-8 max-w-[1600px] mx-auto space-y-4">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <p className="font-semibold mb-1">Failed to fetch buyers</p>
+          <p className="font-mono text-xs break-all">{error}</p>
+        </div>
+        <BuyersPageClient initialBuyers={buyers} />
+      </div>
+    )
+  }
+
   return <BuyersPageClient initialBuyers={buyers} />
 }

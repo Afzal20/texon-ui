@@ -4,40 +4,38 @@ import { getApiToken } from "@/auth/lib/api-client"
 import { restList } from "@/lib/api/rest"
 import type { ProductionLine, ProductionOrder, SewingRecord, PerformanceRecord, ProductionDashboard } from "./production"
 
-async function getToken(): Promise<string> {
-  const token = await getApiToken()
-  if (!token) throw new Error("Not authenticated")
-  return token
+async function getToken(token?: string): Promise<string> {
+  return getApiToken(token)
 }
 
-export async function getProductionLines(): Promise<ProductionLine[]> {
-  const token = await getToken()
-  return (await restList("production", "ProductionLine", undefined, token)).data as unknown as ProductionLine[]
+export async function getProductionLines(token?: string): Promise<ProductionLine[]> {
+  const apiToken = await getToken(token)
+  return (await restList("production", "ProductionLine", undefined, apiToken)).data as unknown as ProductionLine[]
 }
 
-export async function getProductionOrders(search?: string): Promise<ProductionOrder[]> {
-  const token = await getToken()
-  const rows = (await restList("production", "ProductionOrder", undefined, token)).data as unknown as ProductionOrder[]
+export async function getProductionOrders(search?: string, token?: string): Promise<ProductionOrder[]> {
+  const apiToken = await getToken(token)
+  const rows = (await restList("production", "ProductionOrder", undefined, apiToken)).data as unknown as ProductionOrder[]
   return search ? rows.filter((row) => String(row.order_number).includes(search)) : rows
 }
 
-export async function getSewingRecords(_lineId?: number): Promise<SewingRecord[]> {
+export async function getSewingRecords(_lineId?: number, token?: string): Promise<SewingRecord[]> {
   void _lineId
-  const token = await getToken()
-  return (await restList("production", "SewingRecord", undefined, token)).data as unknown as SewingRecord[]
+  const apiToken = await getToken(token)
+  return (await restList("production", "SewingRecord", undefined, apiToken)).data as unknown as SewingRecord[]
 }
 
-export async function getPerformanceRecords(): Promise<PerformanceRecord[]> {
-  const token = await getToken()
-  return (await restList("performance", "PerformanceRecord", undefined, token)).data as unknown as PerformanceRecord[]
+export async function getPerformanceRecords(token?: string): Promise<PerformanceRecord[]> {
+  const apiToken = await getToken(token)
+  return (await restList("performance", "PerformanceRecord", undefined, apiToken)).data as unknown as PerformanceRecord[]
 }
 
-export async function getDashboardSummary(): Promise<ProductionDashboard> {
-  const token = await getToken()
+export async function getDashboardSummary(token?: string): Promise<ProductionDashboard> {
+  const apiToken = await getToken(token)
   const [{ data: orders }, { data: sewing }, { data: lines }] = await Promise.all([
-    restList("production", "ProductionOrder", undefined, token),
-    restList("production", "SewingRecord", undefined, token),
-    restList("production", "ProductionLine", undefined, token),
+    restList("production", "ProductionOrder", undefined, apiToken),
+    restList("production", "SewingRecord", undefined, apiToken),
+    restList("production", "ProductionLine", undefined, apiToken),
   ])
   const totalOrders = orders.length
   const outputActual = sewing.reduce((sum, row) => sum + (Number(row.output_quantity) || 0), 0)

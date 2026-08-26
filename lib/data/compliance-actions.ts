@@ -4,20 +4,18 @@ import { getApiToken } from "@/auth/lib/api-client"
 import { restList } from "@/lib/api/rest"
 import type { ComplianceRecord, ComplianceDocument, ComplianceSummary } from "./compliance"
 
-async function getToken(): Promise<string> {
-  const token = await getApiToken()
-  if (!token) throw new Error("Not authenticated")
-  return token
+async function getToken(token?: string): Promise<string> {
+  return getApiToken(token)
 }
 
-export async function getComplianceRecords(): Promise<ComplianceRecord[]> {
-  const token = await getToken()
-  return (await restList("compliance", "ComplianceRecord", undefined, token)).data as unknown as ComplianceRecord[]
+export async function getComplianceRecords(token?: string): Promise<ComplianceRecord[]> {
+  const apiToken = await getToken(token)
+  return (await restList("compliance", "ComplianceRecord", undefined, apiToken)).data as unknown as ComplianceRecord[]
 }
 
-export async function getComplianceSummary(): Promise<ComplianceSummary> {
-  const token = await getToken()
-  const { data: records } = await restList("compliance", "ComplianceRecord", undefined, token)
+export async function getComplianceSummary(token?: string): Promise<ComplianceSummary> {
+  const apiToken = await getToken(token)
+  const { data: records } = await restList("compliance", "ComplianceRecord", undefined, apiToken)
   const scores = records.map((row) => Number(row.score) || 0)
   const overall =
     scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0

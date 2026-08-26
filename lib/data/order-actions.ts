@@ -4,16 +4,14 @@ import { getApiToken } from "@/auth/lib/api-client"
 import { restList } from "@/lib/api/rest"
 import type { Order, OrdersListResponse, PurchaseOrder, BuyerPortfolio } from "./orders"
 
-async function getToken(): Promise<string> {
-  const token = await getApiToken()
-  if (!token) throw new Error("Not authenticated")
-  return token
+async function getToken(token?: string): Promise<string> {
+  return getApiToken(token)
 }
 
-export async function getOrders(search?: string, _page = 1): Promise<OrdersListResponse> {
+export async function getOrders(search?: string, _page = 1, token?: string): Promise<OrdersListResponse> {
   void _page
-  const token = await getToken()
-  const rows = (await restList("orders", "Order", undefined, token)).data as unknown as Order[]
+  const apiToken = await getToken(token)
+  const rows = (await restList("orders", "Order", undefined, apiToken)).data as unknown as Order[]
   const filtered = search ? rows.filter((row) => String(row.order_number).includes(search)) : rows
   return {
     count: filtered.length,
@@ -23,28 +21,28 @@ export async function getOrders(search?: string, _page = 1): Promise<OrdersListR
   }
 }
 
-export async function getPurchaseOrders(search?: string): Promise<PurchaseOrder[]> {
-  const token = await getToken()
-  const rows = (await restList("merchandising", "PurchaseOrder", undefined, token)).data as unknown as PurchaseOrder[]
+export async function getPurchaseOrders(search?: string, token?: string): Promise<PurchaseOrder[]> {
+  const apiToken = await getToken(token)
+  const rows = (await restList("merchandising", "PurchaseOrder", undefined, apiToken)).data as unknown as PurchaseOrder[]
   return search ? rows.filter((row) => String(row.po_number).includes(search)) : rows
 }
 
-export async function getBuyerPortfolios(): Promise<BuyerPortfolio[]> {
-  const token = await getToken()
-  const rows = (await restList("buyers", "BuyerPortfolio", undefined, token)).data as unknown as BuyerPortfolio[]
+export async function getBuyerPortfolios(token?: string): Promise<BuyerPortfolio[]> {
+  const apiToken = await getToken(token)
+  const rows = (await restList("buyers", "BuyerPortfolio", undefined, apiToken)).data as unknown as BuyerPortfolio[]
   return rows
 }
 
-export async function getDashboardOrdersSummary(): Promise<{
+export async function getDashboardOrdersSummary(token?: string): Promise<{
   total_ytd: string
   active_buyers: number
   avg_lead_time_days: number
   samples_pending: number
 }> {
-  const token = await getToken()
+  const apiToken = await getToken(token)
   const [{ data: orders }, { data: samples }] = await Promise.all([
-    restList("orders", "Order", undefined, token),
-    restList("merchandising", "SampleOrder", undefined, token),
+    restList("orders", "Order", undefined, apiToken),
+    restList("merchandising", "SampleOrder", undefined, apiToken),
   ])
   const totalValue = orders.reduce((sum, row) => sum + (Number(row.total_value) || 0), 0)
   const leadTimes = orders

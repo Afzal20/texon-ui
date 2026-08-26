@@ -10,6 +10,7 @@ import { RiskHeatmap } from "@/components/dashboard/RiskHeatmap"
 import { getDashboardSummary } from "@/lib/data/production-actions"
 import { getDashboardOrdersSummary } from "@/lib/data/order-actions"
 import type { ProductionDashboard } from "@/lib/data/production"
+import { getClientToken } from "@/lib/get-client-token"
 import { toast } from "sonner"
 
 import { cn } from "@/lib/utils"
@@ -34,14 +35,15 @@ export default function Dashboard() {
 
   const fetchData = React.useCallback(() => {
     setError(null)
-    getDashboardSummary()
+    const token = getClientToken() ?? undefined
+    getDashboardSummary(token)
       .then(setSummary)
       .catch((err) => {
         const msg = err?.message || "Failed to load dashboard"
         setError(msg)
         toast.error(msg)
       })
-    getDashboardOrdersSummary()
+    getDashboardOrdersSummary(token)
       .then(setOrdersSummary)
       .catch((err) => {
         const msg = err?.message || "Failed to load orders"

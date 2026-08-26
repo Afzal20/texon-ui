@@ -4,34 +4,32 @@ import { getApiToken } from "@/auth/lib/api-client"
 import { restList } from "@/lib/api/rest"
 import type { AccountsPayable, AccountsReceivable, JournalEntry, AccountsSummary } from "./accounts"
 
-async function getToken(): Promise<string> {
-  const token = await getApiToken()
-  if (!token) throw new Error("Not authenticated")
-  return token
+async function getToken(token?: string): Promise<string> {
+  return getApiToken(token)
 }
 
-export async function getAccountsPayable(): Promise<AccountsPayable[]> {
-  const token = await getToken()
-  return (await restList("accounts", "AccountsPayable", undefined, token)).data as unknown as AccountsPayable[]
+export async function getAccountsPayable(token?: string): Promise<AccountsPayable[]> {
+  const apiToken = await getToken(token)
+  return (await restList("accounts", "AccountsPayable", undefined, apiToken)).data as unknown as AccountsPayable[]
 }
 
-export async function getAccountsReceivable(): Promise<AccountsReceivable[]> {
-  const token = await getToken()
-  return (await restList("accounts", "AccountsReceivable", undefined, token)).data as unknown as AccountsReceivable[]
+export async function getAccountsReceivable(token?: string): Promise<AccountsReceivable[]> {
+  const apiToken = await getToken(token)
+  return (await restList("accounts", "AccountsReceivable", undefined, apiToken)).data as unknown as AccountsReceivable[]
 }
 
-export async function getJournalEntries(): Promise<JournalEntry[]> {
-  const token = await getToken()
-  return (await restList("accounts", "JournalEntry", undefined, token)).data as unknown as JournalEntry[]
+export async function getJournalEntries(token?: string): Promise<JournalEntry[]> {
+  const apiToken = await getToken(token)
+  return (await restList("accounts", "JournalEntry", undefined, apiToken)).data as unknown as JournalEntry[]
 }
 
-export async function getAccountsSummary(): Promise<AccountsSummary> {
-  const token = await getToken()
+export async function getAccountsSummary(token?: string): Promise<AccountsSummary> {
+  const apiToken = await getToken(token)
   const [{ data: payable }, { data: receivable }, { data: journal }, { data: expense }] = await Promise.all([
-    restList("accounts", "AccountsPayable", undefined, token),
-    restList("accounts", "AccountsReceivable", undefined, token),
-    restList("accounts", "JournalEntry", undefined, token),
-    restList("accounts", "Expense", undefined, token),
+    restList("accounts", "AccountsPayable", undefined, apiToken),
+    restList("accounts", "AccountsReceivable", undefined, apiToken),
+    restList("accounts", "JournalEntry", undefined, apiToken),
+    restList("accounts", "Expense", undefined, apiToken),
   ])
   const payables = payable ?? []
   const receivables = receivable ?? []

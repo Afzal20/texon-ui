@@ -4,15 +4,13 @@ import { getApiToken } from "@/auth/lib/api-client"
 import { restList } from "@/lib/api/rest"
 import type { Employee, Attendance, ShiftSchedule } from "./hr"
 
-async function getToken(): Promise<string> {
-  const token = await getApiToken()
-  if (!token) throw new Error("Not authenticated")
-  return token
+async function getToken(token?: string): Promise<string> {
+  return getApiToken(token)
 }
 
-export async function getEmployees(search?: string): Promise<Employee[]> {
-  const token = await getToken()
-  const rows = (await restList("hr", "Employee", undefined, token)).data as unknown as Employee[]
+export async function getEmployees(search?: string, token?: string): Promise<Employee[]> {
+  const apiToken = await getToken(token)
+  const rows = (await restList("hr", "Employee", undefined, apiToken)).data as unknown as Employee[]
   return search
     ? rows.filter((row) =>
         `${row.first_name} ${row.last_name} ${row.employee_id}`.toLowerCase().includes(search.toLowerCase()),
@@ -20,15 +18,15 @@ export async function getEmployees(search?: string): Promise<Employee[]> {
     : rows
 }
 
-export async function getAttendance(date?: string): Promise<Attendance[]> {
-  const token = await getToken()
-  const rows = (await restList("hr", "Attendance", undefined, token)).data as unknown as Attendance[]
+export async function getAttendance(date?: string, token?: string): Promise<Attendance[]> {
+  const apiToken = await getToken(token)
+  const rows = (await restList("hr", "Attendance", undefined, apiToken)).data as unknown as Attendance[]
   return date ? rows.filter((row) => String(row.date).startsWith(date)) : rows
 }
 
-export async function getSchedule(): Promise<ShiftSchedule[]> {
-  const token = await getToken()
-  const rows = await restList("scheduling", "Schedule", undefined, token)
+export async function getSchedule(token?: string): Promise<ShiftSchedule[]> {
+  const apiToken = await getToken(token)
+  const rows = await restList("scheduling", "Schedule", undefined, apiToken)
   return rows.data.map((row) => ({
     id: Number(row.id) || 0,
     production_line: 0,
@@ -41,16 +39,16 @@ export async function getSchedule(): Promise<ShiftSchedule[]> {
   }))
 }
 
-export async function getDepartments(): Promise<{ id: number; name: string }[]> {
-  const token = await getToken()
-  const rows = await restList("hr", "Department", undefined, token)
+export async function getDepartments(token?: string): Promise<{ id: number; name: string }[]> {
+  const apiToken = await getToken(token)
+  const rows = await restList("hr", "Department", undefined, apiToken)
   return rows.data.map((row) => ({
     id: Number(row.id) || 0,
     name: String(row.name ?? ""),
   }))
 }
 
-export async function getAttendanceSummary(): Promise<{
+export async function getAttendanceSummary(token?: string): Promise<{
   total_workers: number
   present_today: number
   attendance_percentage: number
@@ -59,10 +57,10 @@ export async function getAttendanceSummary(): Promise<{
   night_shift_percentage: number
   unassigned_staff: number
 }> {
-  const token = await getToken()
+  const apiToken = await getToken(token)
   const [{ data: employees }, { data: attendance }] = await Promise.all([
-    restList("hr", "Employee", undefined, token),
-    restList("hr", "Attendance", undefined, token),
+    restList("hr", "Employee", undefined, apiToken),
+    restList("hr", "Attendance", undefined, apiToken),
   ])
   const totalWorkers = employees.filter((row) => String(row.status ?? "") !== "inactive").length
   let present = 0
