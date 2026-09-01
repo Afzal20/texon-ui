@@ -4,8 +4,11 @@ Next.js (App Router) frontend for the **Texon ERP** — an Enterprise Resource
 Planning system for the **Ready-Made Garment (RMG) industry**. It provides a
 complete web UI for managing buyers, orders, merchandising, production,
 inventory, procurement, HR, quality, finance, compliance and more, and talks
-to a Django REST backend. Backend code lives in `../../backend/` in this repo
-(deployed separately).
+to a Django REST backend. This app was copied out of the original monorepo
+[github.com/Afzal20/texon](https://github.com/Afzal20/texon) into its own
+separate Git repository (together with the backend as a second repository)
+so the two can be deployed to Vercel independently; the backend code lives
+in `../../backend/` in this workspace.
 
 ## Live Deployment
 
